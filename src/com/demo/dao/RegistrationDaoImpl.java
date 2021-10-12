@@ -6,6 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.demo.entity.UserInfo;
@@ -16,33 +21,23 @@ import com.demo.utility.DBUtility;
 @Component
 public class RegistrationDaoImpl implements RegistrationDao{
 	
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+	
 
 
 	@Override
 	public void saveUser(UserInfo userInfo) throws UserDetailedException, DBConnectionException   {
-		Connection conn = null;
-		PreparedStatement statement = null;
+		
 		try {
-		 conn =DBUtility.getConnection();
 		
-		String sql = "insert into UserDetail (UserName,Password,Gender,PhoneNumber,email) values(?,?,?,?,?)";
+		String sql = "insert into UserDetail (UserName,Password,Gender,PhoneNumber,email) "
+				+ "values('"+userInfo.getUserName()+"','"+userInfo.getPassword()+"','"+userInfo.getGender()+"','"+userInfo.getPhoneNumber()+"','"+userInfo.getEmail()+"')";
+		jdbcTemplate.update(sql);
 		
-		 statement = conn.prepareStatement(sql);
-		
-		statement.setString(1, userInfo.getUserName());
-		statement.setString(2, userInfo.getPassword());
-		statement.setString(3, userInfo.getGender());
-		statement.setString(4, userInfo.getPhoneNumber());
-		statement.setString(5, userInfo.getEmail());
-		statement.execute();
-		}catch(ClassNotFoundException cnfex) {
-			throw new DBConnectionException("error in connecting in db", cnfex);
-		}
-		catch(SQLException ex) {
-			if(ex instanceof SQLIntegrityConstraintViolationException) {
-				throw new UserDetailedException("Account already created with given details you can login directly or you can change userName", ex);
-			}
-			throw new UserDetailedException("error in sql statement", ex);
+		}catch(DataAccessException ex) {
+			
+			throw new UserDetailedException(ex.getMessage(), ex);
 		}
 		
 	}
